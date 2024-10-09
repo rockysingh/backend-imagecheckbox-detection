@@ -1,6 +1,13 @@
 # backend-checkbox-detection
 
 
+## Prerequisite
+
+1. You will need Java 17
+2. I ran the programme using the main class in `CheckboxExtractor` using `Intellij`
+3. If you need to add more images please add them to `src/main/resources/sample/`
+4. There is an option to use HighGUI in the code you can comment this out. It is enabled for now for debugging
+
 ### Challenge
 
 I determined eventually a few steps.
