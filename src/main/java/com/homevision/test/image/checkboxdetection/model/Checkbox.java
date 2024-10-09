@@ -1,37 +1,14 @@
 package com.homevision.test.image.checkboxdetection.model;
 
+import org.opencv.core.Mat;
+import org.opencv.core.Rect;
+
 public class Checkbox {
+    Rect rect;
+    Mat pixelMatrix;
 
-
-    private String ticked;
-    private String label;
-
-    public Checkbox(String ticked, String label) {
-        this.ticked = ticked;
-        this.label = label;
-    }
-
-    public String getTicked() {
-        return ticked;
-    }
-
-    public void setTicked(String ticked) {
-        this.ticked = ticked;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    @Override
-    public String toString() {
-        return "Checkbox{" +
-                "ticked='" + ticked + '\'' +
-                ", label='" + label + '\'' +
-                '}';
+    Checkbox(Rect rect, Mat pixelMatrix) {
+        this.rect = rect;
+        this.pixelMatrix = pixelMatrix;
     }
 }
