@@ -3,3 +3,6 @@ build/*
 .gradle
 .gradle/*
 .idea/*
+
+out/*
+out

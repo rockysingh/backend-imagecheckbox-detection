@@ -13,6 +13,31 @@ public class CheckboxResult {
         this.location = location;
     }
 
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public boolean isChecked() {
+        return isChecked;
+    }
+
+    public void setChecked(boolean checked) {
+        isChecked = checked;
+    }
+
+    public Rect getLocation() {
+        return location;
+    }
+
+    public void setLocation(Rect location) {
+        this.location = location;
+    }
+
+
     @Override
     public String toString() {
         return "Checkbox: " + label + ", Checked: " + isChecked + ", Location: " + location;

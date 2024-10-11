@@ -7,6 +7,10 @@
 2. I ran the programme using the main class in `CheckboxExtractor` using `Intellij`
 3. If you need to add more images please add them to `src/main/resources/sample/`
 
+
+In order to run the unit tests please use `./gradlew test`
+
+
 ### Challenge
 
 I determined eventually a few steps.
@@ -26,7 +30,7 @@ I time boxed myself too 2hr 30 mins.
 1. Added pipeline config to work with different config
 2. There is an assumption that the checkbox would have dark tick or x. They could use a differnet background so we need to to inverse perhaps if its a dark background with light tick or x
 3. I think use shapes like X or Tick to determine if its checked. I think it provides more accuracy too and its good to store the type of shape used to tick box
-4. Label extraction (not a requirement) 
+4. Label extraction (not a requirement)
 
 ## Learning
 
