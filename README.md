@@ -10,7 +10,7 @@
 
 In order to run the unit tests please use `./gradlew test`
 
-![Screenshot 2024-10-11 at 15.00.54.png](Screenshot 2024-10-11 at 14.56.48.png)
+![Screenshot 2024-10-11 at 15.00.54.png](https://raw.githubusercontent.com/rockysingh/backend-imagecheckbox-detection/refs/heads/main/Screenshot%202024-10-11%20at%2014.56.48.png)
 
 ### Challenge
 
