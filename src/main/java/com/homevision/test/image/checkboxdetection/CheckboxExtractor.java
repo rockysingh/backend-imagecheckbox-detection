@@ -3,7 +3,6 @@ package com.homevision.test.image.checkboxdetection;
 import com.homevision.test.image.checkboxdetection.model.CheckboxResult;
 import com.homevision.test.image.checkboxdetection.model.PipelinesConfig;
 import com.homevision.test.image.checkboxdetection.model.Tesseract;
-import com.homevision.test.image.checkboxdetection.service.ImageCheckboxService;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.opencv.opencv_java;
 import org.opencv.core.*;
@@ -26,7 +25,7 @@ public class CheckboxExtractor {
             return new ArrayList<>();
         }
 
-        Mat grayImage = ImageCheckboxService.convertToGrayscale(image);
+        Mat grayImage = convertToGrayscale(image);
         int width = grayImage.cols();
 
         // You can adjust config here for different image setups
@@ -99,6 +98,12 @@ public class CheckboxExtractor {
         // TODO: Use Tesseract to extract text from the label region
         String label = Tesseract.imageToString(labelRegion);
         return label.trim();
+    }
+
+    public static Mat convertToGrayscale(Mat image) {
+        Mat grayImage = new Mat();
+        Imgproc.cvtColor(image, grayImage, Imgproc.COLOR_BGR2GRAY);
+        return grayImage;
     }
 
     public static List<MatOfPoint> getCheckboxes(Mat original, Mat grayImage, PipelinesConfig config) {
