@@ -1,24 +1,25 @@
 package com.homevision.test.image.checkboxdetection;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
+import com.homevision.test.image.checkboxdetection.model.CheckboxResult;
 import com.homevision.test.image.checkboxdetection.model.PipelinesConfig;
 import com.homevision.test.image.checkboxdetection.model.Tesseract;
 import com.homevision.test.image.checkboxdetection.service.ImageCheckboxService;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.opencv.opencv_java;
 import org.opencv.core.*;
-import org.opencv.highgui.HighGui;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CheckboxExtractor {
     static {
         Loader.load(opencv_java.class);
     }
 
-    public static List<String> findCheckBoxes(String path) {
+    public static List<CheckboxResult> findCheckBoxes(String path) {
         Mat image = Imgcodecs.imread(path);
         if (image.empty()) {
             System.out.println(path.split("\\\\")[path.split("\\\\").length - 1] + " is not an image file.");
@@ -28,65 +29,129 @@ public class CheckboxExtractor {
         Mat grayImage = ImageCheckboxService.convertToGrayscale(image);
         int width = grayImage.cols();
 
-        // TODO The above was a way of making it configurable per image to give it different
-        // config for different aspects of the image such as weight/height etc for the checkboxes as they could differ per image
-        // This was an idea but never got around to implementing it.
-
+        // You can adjust config here for different image setups
+        // This is not used.
         PipelinesConfig config = new PipelinesConfig();
-//        config.setWidthRange(new int[] { 15, 35 });
-//        config.setHeightRange(new int[] { 15, 40 });
-//        config.setScalingFactors(new double[] { 0.7 });
-//        config.setWhRatioRange(new double[] { 0.5, 1.7 });
-
 
         List<MatOfPoint> checkboxes = getCheckboxes(image, grayImage, config);
         System.out.println(checkboxes.size() + " checkboxes found.");
 
-        List<String> data = new ArrayList<>();
+        List<CheckboxResult> checkboxResults = new ArrayList<>();
         for (MatOfPoint checkbox : checkboxes) {
-                Rect rect = new Rect(0,0,checkbox.width(),checkbox.height());
-                Mat croppedImage = grayImage.submat(rect.y, rect.y + 80, rect.x, rect.x + width);
-                // TODO: We need to find the text related to checkbox (the label)
-                // I did no get time to do this.
-                String text = Tesseract.imageToString(croppedImage);
-                data.add(text);
+            Rect rect = Imgproc.boundingRect(checkbox);
+
+            // Crop checkbox area for checking if ticked
+            Mat checkboxRegion = grayImage.submat(rect);
+
+            // Check if the checkbox is ticked (we assume ticked if there's a dark region inside)
+            boolean isChecked = isCheckboxTicked(checkboxRegion);
+
+            // Extract the label near the checkbox (above or to the right)
+            String label = extractCheckboxLabel(grayImage, rect, width);
+
+            checkboxResults.add(new CheckboxResult(label, isChecked, rect));
         }
 
-        if (checkboxes.isEmpty()) {
-            System.out.println("No checkbox is checked.");
-        }
-        return data;
+        return checkboxResults;
     }
 
-    private static List<MatOfPoint> getCheckboxes(Mat original, Mat grayImage, PipelinesConfig config) {
+    public static boolean isCheckboxTicked(Mat checkboxRegion) {
+        // Apply a threshold to highlight dark regions (my assumption is tick is a dark inked)
+        Mat threshold = new Mat();
+        Imgproc.threshold(checkboxRegion, threshold, 100, 255, Imgproc.THRESH_BINARY_INV);
+
+        // I tried look for shapes etc but it was too hard to calculate
+        // I went for the simple approach of looking for dark pixels with in the checkbox area.
+        // I thought that seemed more logical. However, there is an issue with it as it could be X or Tick
+        // I still don't know which one is which. This is a future improvement and something to improve.
+        // I Calculate the percentage of dark pixels in the checkbox
+        double nonZeroCount = Core.countNonZero(threshold);
+        double area = threshold.rows() * threshold.cols();
+        double ratio = nonZeroCount / area;
+
+        // Assumption is that the checkbox is ticked if more than 15% of the area is dark
+        return ratio > 0.15;
+    }
+
+    private static String extractCheckboxLabel(Mat grayImage, Rect rect, int imageWidth) {
+        // this could be configured per image (in the future) if we require
+        int padding = 10; // Padding between checkbox and label
+        int labelHeight = 50; // Increase the height of the region for the label
+
+        // 1st: We look for the label to the right of the checkbox
+        int labelXStart = rect.x + rect.width + padding;
+        int labelXEnd = Math.min(imageWidth, labelXStart + 300); // Increase label width to 300px
+        int labelYStart = rect.y;
+        int labelYEnd = rect.y + rect.height + 10;
+
+        // 2nd: If the label is not found or space is too small we try above the checkbox
+        if (labelXEnd > imageWidth || labelXEnd - labelXStart < 10) {
+            labelXStart = Math.max(0, rect.x - 300); // Increase area to the left by 300px
+            labelXEnd = rect.x - padding;
+            labelYStart = Math.max(0, rect.y - labelHeight - 10); // Search higher above the checkbox
+            labelYEnd = rect.y;
+        }
+
+        // This is to define region of interst for label value
+        Rect labelRect = new Rect(new Point(labelXStart, labelYStart), new Point(labelXEnd, labelYEnd));
+        Mat labelRegion = grayImage.submat(labelRect);
+
+        // DEBUG to show the label region on screen
+      //  Imgcodecs.imwrite("label-region.png", labelRegion);
+
+        // TODO: Use Tesseract to extract text from the label region
+        String label = Tesseract.imageToString(labelRegion);
+        return label.trim();
+    }
+
+    public static List<MatOfPoint> getCheckboxes(Mat original, Mat grayImage, PipelinesConfig config) {
         List<MatOfPoint> checkboxes = new ArrayList<>();
-        Mat thresh = ImageCheckboxService.convertToGaussianAndThreshold(grayImage);
 
-        // Find contours and filter using contour area filtering to remove noise
-        List<MatOfPoint> cnts = new ArrayList<>();
-        Mat hierarchy = ImageCheckboxService.findContours(thresh, cnts);
+        // Apply adaptive threshold to handle different image conditions
+        Mat adaptiveThresh = new Mat();
+        Imgproc.adaptiveThreshold(grayImage, adaptiveThresh, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY_INV, 11, 2);
 
-        // Repair checkbox horizontal and vertical walls if there is issue with quality.
-        // This needs more I think a few edge cases to consider where squares or rect are not fully closed on one side etc.
-        // There could be a strong shape with 3 shapes but the 4th side is not so visible.
-        Mat repair = new Mat();
-        ImageCheckboxService.repairVerticalAndHorizontalWalls(thresh, repair);
+        // Morphological operations to enhance checkbox shapes (dilate and erode)
+        // We needed to this as it wasn't finding all the checkboxes.
+        Mat morphed = new Mat();
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+        Imgproc.morphologyEx(adaptiveThresh, morphed, Imgproc.MORPH_CLOSE, kernel);
 
-        // Detect checkboxes using shape approximation and aspect ratio filtering
-        List<MatOfPoint> checkboxContours = ImageCheckboxService.detectCheckBox(cnts,repair,hierarchy,original);
-        checkboxes.addAll(checkboxContours);
-        System.out.println("Checkboxes: " + checkboxContours.size());
+        // Find contours
+        List<MatOfPoint> contours = new ArrayList<>();
+        Mat hierarchy = new Mat();
+        Imgproc.findContours(morphed, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
 
+        for (MatOfPoint contour : contours) {
+            Rect boundingRect = Imgproc.boundingRect(contour);
 
-        // This is show the transformation of the steps above with the image visually using HighGUI.
-        HighGui.imshow("thresh", thresh);
-        HighGui.imshow("repair", repair);
-        HighGui.imshow("original", original);
-        // Note: Uncomment this and re-run the programme to do see the original/repair and thresh pictures of how they compare.
-        HighGui.waitKey();
+            // Filter by aspect ratio and size (checkboxes are square(s) that is my assumption! (sorry brute force))
+            double aspectRatio = (double) boundingRect.width / boundingRect.height;
+            if (aspectRatio > 0.8 && aspectRatio < 1.2 && boundingRect.area() > 100 && boundingRect.area() < 5000) {
+                checkboxes.add(contour);
+            }
+        }
 
         return checkboxes;
     }
+
+    // The below method only found one checkbox so had to rewrite it.
+
+//    private static List<MatOfPoint> getCheckboxes(Mat original, Mat grayImage, PipelinesConfig config) {
+//        List<MatOfPoint> checkboxes = new ArrayList<>();
+//        Mat thresh = ImageCheckboxService.convertToGaussianAndThreshold(grayImage);
+//
+//        List<MatOfPoint> cnts = new ArrayList<>();
+//        Mat hierarchy = ImageCheckboxService.findContours(thresh, cnts);
+//
+//        Mat repair = new Mat();
+//        ImageCheckboxService.repairVerticalAndHorizontalWalls(thresh, repair);
+//
+//        List<MatOfPoint> checkboxContours = ImageCheckboxService.detectCheckBox(cnts, repair, hierarchy, original);
+//        checkboxes.addAll(checkboxContours);
+//
+//        return checkboxes;
+//    }
 
     public static void main(String[] args) {
         processImageFolder();
@@ -100,11 +165,8 @@ public class CheckboxExtractor {
             if (file.isFile()) {
                 count++;
                 System.out.println("Handling " + count + " - " + file.getAbsolutePath());
-                List<String> fileData = findCheckBoxes(file.getAbsolutePath());
-                System.out.println(file.getName());
-                if (!fileData.isEmpty()) {
-                    System.out.println(fileData);
-                }
+                List<CheckboxResult> checkboxes = findCheckBoxes(file.getPath());
+                checkboxes.forEach(System.out::println);
             }
         }
         if (count > 0) {
