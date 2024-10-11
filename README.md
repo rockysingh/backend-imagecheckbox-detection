@@ -6,34 +6,27 @@
 1. You will need Java 17
 2. I ran the programme using the main class in `CheckboxExtractor` using `Intellij`
 3. If you need to add more images please add them to `src/main/resources/sample/`
-4. There is an option to use HighGUI in the code you can comment this out. It is enabled for now for debugging
 
 ### Challenge
 
 I determined eventually a few steps.
 
-1. The first step, we needed to load the image, convert it to grayscale, gaussian blur and add a threshold (Otsu's).
-2. Secondly, We needed to find contours and then filter using the contour area to remove noise on the image.
-
-The step in two was more tricky and in long term needed configuration per image. I did try that but didn't get time to finish it off.
-
-3. Thirdly, we need to repair the vertical and horizontal walls of the checkboxes in the image. However, I found this tricky due to the thickness of walls.
-4. Lastly, we needed to detect the checkboxes and use approxmation and aspect ratio filtering.
+1. The first step, we needed to load the image, convert it to grayscale, 
+2. Secondly, use adapter gaussian blur to help with different image quality.
+2. Thirdly, I use Morphological operations to enhance checkbox shapes
+3. Then use contours to iterate over and then in those find squares (assuming they are checkboxes)
+4. In the checkboxes we then check for dark text and assumed it is ticked if we find it.
+5. TODO: text label didnt do (enhancement)
 
 
 ## Future
 
-I time boxed myself too 1hr 30 mins.
+I time boxed myself too 2hr 30 mins.
 
-1. I did not find all checkboxes on the image except the larger square. I needed to play around with the repair of the image
-and consider thickness of the wall etc.
-2. I did not find if the checkbox was ticked or not.
-3. I did not find the text of the checkbox.
-4. I refactored most of the code in to a more managable class `ImageCheckboxService` to see how the differnet methods 
-were being executed in the steps to determine a checkbox. I did not get time to clean up the `CheckboxExtractor` class.
-5. I would have added config per image which could be used to determine the variation of checkboxes i.e size, thickness or lines etc.
-6. There is a lot of challenges with image size, quality and type of file etc.
-7. Language considerations etc could play a part with text rendering and type of character set.
+1. Added pipeline config to work with different config
+2. There is an assumption that the checkbox would have dark tick or x. They could use a differnet background so we need to to inverse perhaps if its a dark background with light tick or x
+3. I think use shapes like X or Tick to determine if its checked. I think it provides more accuracy too and its good to store the type of shape used to tick box
+4. Label extraction (not a requirement) 
 
 ## Learning
 
