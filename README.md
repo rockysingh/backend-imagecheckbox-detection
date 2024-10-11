@@ -20,7 +20,7 @@ I determined eventually a few steps.
 2. Thirdly, I use Morphological operations to enhance checkbox shapes
 3. Then use contours to iterate over and then in those find squares (assuming they are checkboxes)
 4. In the checkboxes we then check for dark text and assumed it is ticked if we find it.
-5. TODO: text label didnt do (enhancement)
+5. TODO: I did not find the label for checkbox (This was NOT a requirement)
 
 
 ## Future
