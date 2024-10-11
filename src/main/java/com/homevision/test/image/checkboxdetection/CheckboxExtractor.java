@@ -73,7 +73,7 @@ public class CheckboxExtractor {
         return ratio > 0.15;
     }
 
-    private static String extractCheckboxLabel(Mat grayImage, Rect rect, int imageWidth) {
+    public static String extractCheckboxLabel(Mat grayImage, Rect rect, int imageWidth) {
         // this could be configured per image (in the future) if we require
         int padding = 10; // Padding between checkbox and label
         int labelHeight = 50; // Increase the height of the region for the label
@@ -95,9 +95,6 @@ public class CheckboxExtractor {
         // This is to define region of interst for label value
         Rect labelRect = new Rect(new Point(labelXStart, labelYStart), new Point(labelXEnd, labelYEnd));
         Mat labelRegion = grayImage.submat(labelRect);
-
-        // DEBUG to show the label region on screen
-      //  Imgcodecs.imwrite("label-region.png", labelRegion);
 
         // TODO: Use Tesseract to extract text from the label region
         String label = Tesseract.imageToString(labelRegion);
