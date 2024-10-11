@@ -25,6 +25,7 @@ class CheckboxExtractorTest {
         assertNotNull(checkboxes, "The result should not be null.");
         assertFalse(checkboxes.isEmpty(), "Checkboxes should be detected.");
 
+        assertEquals(checkboxes.size(),87,"The number of checkboxes detected");
         CheckboxResult firstCheckbox = checkboxes.get(0);
         assertNotNull(firstCheckbox.getLabel(), "Label should not be null.");
         assertTrue(firstCheckbox.isChecked() || !firstCheckbox.isChecked(), "Checkbox should be either checked or unchecked.");
